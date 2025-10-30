@@ -13,7 +13,13 @@ import {
 } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
 import { webhookService } from '../../../api/services'
-import { WebhookItem, Status, AppType, HttpMethod } from '../../../api/types'
+import {
+  WebhookItem,
+  GlobalStatus,
+  WebhookAPP,
+  HTTPMethod,
+  TemplateAPP,
+} from '../../../api/types'
 
 export default function WebhookConfigs() {
   const [data, setData] = useState<WebhookItem[]>([])
@@ -36,7 +42,7 @@ export default function WebhookConfigs() {
       const res = await webhookService.list({ page, pageSize, keyword })
       setData(res.data.items)
       setTotal(res.data.total)
-    } catch (error) {
+    } catch {
       message.error('加载数据失败')
     } finally {
       setLoading(false)
@@ -46,7 +52,7 @@ export default function WebhookConfigs() {
   const handleCreate = () => {
     setEditingItem(null)
     form.resetFields()
-    form.setFieldsValue({ method: HttpMethod.POST, app: AppType.WEBHOOK })
+    form.setFieldsValue({ method: HTTPMethod.POST, app: WebhookAPP.OTHER })
     setModalVisible(true)
   }
 
@@ -69,7 +75,7 @@ export default function WebhookConfigs() {
       }
       setModalVisible(false)
       loadData()
-    } catch (error) {
+    } catch {
       message.error('操作失败')
     }
   }
@@ -79,7 +85,7 @@ export default function WebhookConfigs() {
       await webhookService.delete(uid)
       message.success('删除成功')
       loadData()
-    } catch (error) {
+    } catch {
       message.error('删除失败')
     }
   }
@@ -87,11 +93,13 @@ export default function WebhookConfigs() {
   const handleStatusToggle = async (item: WebhookItem) => {
     try {
       const newStatus =
-        item.status === Status.ENABLED ? Status.DISABLED : Status.ENABLED
+        item.status === GlobalStatus.ENABLED
+          ? GlobalStatus.DISABLED
+          : GlobalStatus.ENABLED
       await webhookService.updateStatus(item.uid, newStatus)
       message.success('状态更新成功')
       loadData()
-    } catch (error) {
+    } catch {
       message.error('状态更新失败')
     }
   }
@@ -105,7 +113,7 @@ export default function WebhookConfigs() {
       dataIndex: 'method',
       key: 'method',
       width: 100,
-      render: (method: HttpMethod) => {
+      render: (method: HTTPMethod) => {
         const methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']
         return <Tag>{methods[method]}</Tag>
       },
@@ -115,8 +123,8 @@ export default function WebhookConfigs() {
       dataIndex: 'status',
       key: 'status',
       width: 80,
-      render: (status: Status) =>
-        status === Status.ENABLED ? (
+      render: (status: GlobalStatus) =>
+        status === GlobalStatus.ENABLED ? (
           <Tag color='success'>启用</Tag>
         ) : (
           <Tag color='default'>禁用</Tag>
@@ -127,7 +135,7 @@ export default function WebhookConfigs() {
       title: '操作',
       key: 'action',
       width: 200,
-      render: (_: any, record: WebhookItem) => (
+      render: (_: unknown, record: WebhookItem) => (
         <Space>
           <Button type='link' size='small' onClick={() => handleEdit(record)}>
             编辑
@@ -137,7 +145,7 @@ export default function WebhookConfigs() {
             size='small'
             onClick={() => handleStatusToggle(record)}
           >
-            {record.status === Status.ENABLED ? '禁用' : '启用'}
+            {record.status === GlobalStatus.ENABLED ? '禁用' : '启用'}
           </Button>
           <Popconfirm
             title='确定删除？'
@@ -220,11 +228,11 @@ export default function WebhookConfigs() {
             rules={[{ required: true, message: '请选择 HTTP 方法' }]}
           >
             <Select>
-              <Select.Option value={HttpMethod.GET}>GET</Select.Option>
-              <Select.Option value={HttpMethod.POST}>POST</Select.Option>
-              <Select.Option value={HttpMethod.PUT}>PUT</Select.Option>
-              <Select.Option value={HttpMethod.DELETE}>DELETE</Select.Option>
-              <Select.Option value={HttpMethod.PATCH}>PATCH</Select.Option>
+              <Select.Option value={HTTPMethod.GET}>GET</Select.Option>
+              <Select.Option value={HTTPMethod.POST}>POST</Select.Option>
+              <Select.Option value={HTTPMethod.PUT}>PUT</Select.Option>
+              <Select.Option value={HTTPMethod.DELETE}>DELETE</Select.Option>
+              <Select.Option value={HTTPMethod.PATCH}>PATCH</Select.Option>
             </Select>
           </Form.Item>
           <Form.Item
@@ -233,8 +241,21 @@ export default function WebhookConfigs() {
             rules={[{ required: true, message: '请选择应用类型' }]}
           >
             <Select>
-              <Select.Option value={AppType.EMAIL}>邮件</Select.Option>
-              <Select.Option value={AppType.WEBHOOK}>Webhook</Select.Option>
+              <Select.Option value={TemplateAPP.TEMPLATE_APP_EMAIL}>
+                邮件
+              </Select.Option>
+              <Select.Option value={TemplateAPP.TEMPLATE_APP_WEBHOOK_OTHER}>
+                Webhook
+              </Select.Option>
+              <Select.Option value={TemplateAPP.TEMPLATE_APP_WEBHOOK_DINGTALK}>
+                钉钉
+              </Select.Option>
+              <Select.Option value={TemplateAPP.TEMPLATE_APP_WEBHOOK_WECHAT}>
+                微信
+              </Select.Option>
+              <Select.Option value={TemplateAPP.TEMPLATE_APP_WEBHOOK_FEISHU}>
+                飞书
+              </Select.Option>
             </Select>
           </Form.Item>
           <Form.Item name='secret' label='签名密钥'>

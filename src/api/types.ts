@@ -51,7 +51,6 @@ export interface PaginationParams {
   page?: number
   pageSize?: number
   keyword?: string
-  status?: GlobalStatus
 }
 
 export interface PaginatedResponse<T> {

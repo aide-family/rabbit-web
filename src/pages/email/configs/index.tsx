@@ -13,7 +13,7 @@ import {
 } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
 import { emailService } from '../../../api/services'
-import { EmailConfigItem, Status } from '../../../api/types'
+import { EmailConfigItem, GlobalStatus } from '../../../api/types'
 
 export default function EmailConfigs() {
   const [data, setData] = useState<EmailConfigItem[]>([])
@@ -36,7 +36,7 @@ export default function EmailConfigs() {
       const res = await emailService.list({ page, pageSize, keyword })
       setData(res.data.items)
       setTotal(res.data.total)
-    } catch (error) {
+    } catch {
       message.error('加载数据失败')
     } finally {
       setLoading(false)
@@ -68,7 +68,7 @@ export default function EmailConfigs() {
       }
       setModalVisible(false)
       loadData()
-    } catch (error) {
+    } catch {
       message.error('操作失败')
     }
   }
@@ -78,7 +78,7 @@ export default function EmailConfigs() {
       await emailService.delete(uid)
       message.success('删除成功')
       loadData()
-    } catch (error) {
+    } catch {
       message.error('删除失败')
     }
   }
@@ -86,11 +86,13 @@ export default function EmailConfigs() {
   const handleStatusToggle = async (item: EmailConfigItem) => {
     try {
       const newStatus =
-        item.status === Status.ENABLED ? Status.DISABLED : Status.ENABLED
+        item.status === GlobalStatus.ENABLED
+          ? GlobalStatus.DISABLED
+          : GlobalStatus.ENABLED
       await emailService.updateStatus(item.uid, newStatus)
       message.success('状态更新成功')
       loadData()
-    } catch (error) {
+    } catch {
       message.error('状态更新失败')
     }
   }
@@ -106,8 +108,8 @@ export default function EmailConfigs() {
       dataIndex: 'status',
       key: 'status',
       width: 80,
-      render: (status: Status) =>
-        status === Status.ENABLED ? (
+      render: (status: GlobalStatus) =>
+        status === GlobalStatus.ENABLED ? (
           <Tag color='success'>启用</Tag>
         ) : (
           <Tag color='default'>禁用</Tag>
@@ -118,7 +120,7 @@ export default function EmailConfigs() {
       title: '操作',
       key: 'action',
       width: 200,
-      render: (_: any, record: EmailConfigItem) => (
+      render: (_: unknown, record: EmailConfigItem) => (
         <Space>
           <Button type='link' size='small' onClick={() => handleEdit(record)}>
             编辑
@@ -128,7 +130,7 @@ export default function EmailConfigs() {
             size='small'
             onClick={() => handleStatusToggle(record)}
           >
-            {record.status === Status.ENABLED ? '禁用' : '启用'}
+            {record.status === GlobalStatus.ENABLED ? '禁用' : '启用'}
           </Button>
           <Popconfirm
             title='确定删除？'

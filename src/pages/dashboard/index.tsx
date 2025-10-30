@@ -20,8 +20,9 @@ import {
 import {
   MessageLogItem,
   HealthCheckReply,
-  Status,
+  GlobalStatus,
   MessageStatus,
+  MessageType,
 } from '../../api/types'
 
 export default function Dashboard() {
@@ -51,8 +52,16 @@ export default function Dashboard() {
         healthRes,
       ] = await Promise.all([
         namespaceService.list({ page: 1, pageSize: 1 }),
-        emailService.list({ page: 1, pageSize: 1, status: Status.ENABLED }),
-        webhookService.list({ page: 1, pageSize: 1, status: Status.ENABLED }),
+        emailService.list({
+          page: 1,
+          pageSize: 1,
+          status: GlobalStatus.ENABLED,
+        }),
+        webhookService.list({
+          page: 1,
+          pageSize: 1,
+          status: GlobalStatus.ENABLED,
+        }),
         templateService.list({ page: 1, pageSize: 1 }),
         messageLogService.list({ page: 1, pageSize: 10 }),
         healthService.check(),
@@ -66,8 +75,8 @@ export default function Dashboard() {
       })
       setRecentLogs(logsRes.data.items)
       setHealth(healthRes.data)
-    } catch (error) {
-      console.error('Failed to load dashboard data:', error)
+    } catch {
+      console.error('Failed to load dashboard data:')
     } finally {
       setLoading(false)
     }
@@ -86,8 +95,8 @@ export default function Dashboard() {
       dataIndex: 'type',
       key: 'type',
       width: 80,
-      render: (type: number) =>
-        type === 0 ? (
+      render: (type: MessageType) =>
+        type === MessageType.Email ? (
           <Tag color='blue'>邮件</Tag>
         ) : (
           <Tag color='green'>Webhook</Tag>
@@ -99,13 +108,13 @@ export default function Dashboard() {
       key: 'status',
       width: 80,
       render: (status: MessageStatus) => {
-        const statusMap = {
-          [MessageStatus.PENDING]: <Tag color='default'>待发送</Tag>,
-          [MessageStatus.SENT]: <Tag color='success'>已发送</Tag>,
-          [MessageStatus.FAILED]: <Tag color='error'>失败</Tag>,
-          [MessageStatus.CANCELLED]: <Tag color='warning'>已取消</Tag>,
+        const statusMap: Partial<Record<MessageStatus, React.ReactNode>> = {
+          [MessageStatus.Pending]: <Tag color='default'>待发送</Tag>,
+          [MessageStatus.Sent]: <Tag color='success'>已发送</Tag>,
+          [MessageStatus.Failed]: <Tag color='error'>失败</Tag>,
+          [MessageStatus.Cancelled]: <Tag color='warning'>已取消</Tag>,
         }
-        return statusMap[status]
+        return statusMap[status] || <Tag color='default'>未知</Tag>
       },
     },
     {

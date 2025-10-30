@@ -7,13 +7,19 @@ import {
   webhookService,
   templateService,
 } from '../../api/services'
-import { Status, AppType } from '../../api/types'
+import {
+  EmailConfigItem,
+  WebhookItem,
+  TemplateItem,
+  GlobalStatus,
+  TemplateAPP,
+} from '../../api/types'
 
 export default function Sender() {
-  const [emailConfigs, setEmailConfigs] = useState<any[]>([])
-  const [webhookConfigs, setWebhookConfigs] = useState<any[]>([])
-  const [emailTemplates, setEmailTemplates] = useState<any[]>([])
-  const [webhookTemplates, setWebhookTemplates] = useState<any[]>([])
+  const [emailConfigs, setEmailConfigs] = useState<EmailConfigItem[]>([])
+  const [webhookConfigs, setWebhookConfigs] = useState<WebhookItem[]>([])
+  const [emailTemplates, setEmailTemplates] = useState<TemplateItem[]>([])
+  const [webhookTemplates, setWebhookTemplates] = useState<TemplateItem[]>([])
   const [emailForm] = Form.useForm()
   const [webhookForm] = Form.useForm()
   const [emailMode, setEmailMode] = useState<'direct' | 'template'>('direct')
@@ -29,23 +35,35 @@ export default function Sender() {
   const loadConfigs = async () => {
     try {
       const [emailRes, webhookRes, templateRes] = await Promise.all([
-        emailService.list({ page: 1, pageSize: 100, status: Status.ENABLED }),
-        webhookService.list({ page: 1, pageSize: 100, status: Status.ENABLED }),
+        emailService.list({
+          page: 1,
+          pageSize: 100,
+          status: GlobalStatus.ENABLED,
+        }),
+        webhookService.list({
+          page: 1,
+          pageSize: 100,
+          status: GlobalStatus.ENABLED,
+        }),
         templateService.list({
           page: 1,
           pageSize: 100,
-          status: Status.ENABLED,
+          status: GlobalStatus.ENABLED,
         }),
       ])
       setEmailConfigs(emailRes.data.items)
       setWebhookConfigs(webhookRes.data.items)
       setEmailTemplates(
-        templateRes.data.items.filter((t) => t.app === AppType.EMAIL)
+        templateRes.data.items.filter(
+          (t) => t.app === TemplateAPP.TEMPLATE_APP_EMAIL
+        )
       )
       setWebhookTemplates(
-        templateRes.data.items.filter((t) => t.app === AppType.WEBHOOK)
+        templateRes.data.items.filter(
+          (t) => t.app === TemplateAPP.TEMPLATE_APP_WEBHOOK_OTHER
+        )
       )
-    } catch (error) {
+    } catch {
       message.error('加载配置失败')
     }
   }
@@ -71,7 +89,7 @@ export default function Sender() {
 
       message.success('发送成功，请在消息日志中查看详情')
       emailForm.resetFields()
-    } catch (error) {
+    } catch {
       message.error('发送失败')
     } finally {
       setLoading(false)
@@ -96,7 +114,7 @@ export default function Sender() {
 
       message.success('发送成功，请在消息日志中查看详情')
       webhookForm.resetFields()
-    } catch (error) {
+    } catch {
       message.error('发送失败')
     } finally {
       setLoading(false)

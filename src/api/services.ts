@@ -13,6 +13,7 @@ import type {
   TemplateAPP,
   HTTPMethod,
   WebhookAPP,
+  MessageStatus,
 } from './types'
 
 export const namespaceService = {
@@ -21,7 +22,7 @@ export const namespaceService = {
       params,
     }),
   get: (name: string) => apiClient.get<NamespaceItem>(`/v1/namespace/${name}`),
-  create: (data: { name: string; metadata?: Record<string, string> }) =>
+  save: (data: { name: string; metadata?: Record<string, string> }) =>
     apiClient.post('/v1/namespace', data),
   updateStatus: (name: string, status: GlobalStatus) =>
     apiClient.put(`/v1/namespace/${name}/status`, { name, status }),
@@ -126,16 +127,16 @@ export const senderService = {
   ) => apiClient.post(`/v1/sender/webhook/${uid}/template`, { uid, ...data }),
 }
 
+export interface MessageLogFilter extends PaginationParams {
+  type?: MessageType
+  app?: TemplateAPP
+  status?: MessageStatus
+  startAtUnix?: string
+  endAtUnix?: string
+}
+
 export const messageLogService = {
-  list: (
-    params: PaginationParams & {
-      type?: MessageType
-      app?: TemplateAPP
-      status?: GlobalStatus
-      startAtUnix?: string
-      endAtUnix?: string
-    }
-  ) =>
+  list: (params: MessageLogFilter) =>
     apiClient.get<PaginatedResponse<MessageLogItem>>('/v1/message-logs', {
       params,
     }),

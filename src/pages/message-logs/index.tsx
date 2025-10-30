@@ -12,9 +12,8 @@ import {
   Descriptions,
 } from 'antd'
 import { ReloadOutlined, StopOutlined } from '@ant-design/icons'
-import { messageLogService } from '../../api/services'
+import { MessageLogFilter, messageLogService } from '../../api/services'
 import { MessageLogItem, MessageType, MessageStatus } from '../../api/types'
-import dayjs from 'dayjs'
 
 const { RangePicker } = DatePicker
 
@@ -24,7 +23,7 @@ export default function MessageLogs() {
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
-  const [filters, setFilters] = useState<any>({})
+  const [filters, setFilters] = useState<MessageLogFilter>({})
   const [selectedItem, setSelectedItem] = useState<MessageLogItem | null>(null)
   const [drawerVisible, setDrawerVisible] = useState(false)
 
@@ -38,7 +37,7 @@ export default function MessageLogs() {
       const res = await messageLogService.list({ page, pageSize, ...filters })
       setData(res.data.items)
       setTotal(res.data.total)
-    } catch (error) {
+    } catch {
       message.error('加载数据失败')
     } finally {
       setLoading(false)
@@ -50,7 +49,7 @@ export default function MessageLogs() {
       await messageLogService.retry(record.uid, record.sendAt)
       message.success('重试请求已提交')
       loadData()
-    } catch (error) {
+    } catch {
       message.error('重试失败')
     }
   }
@@ -60,7 +59,7 @@ export default function MessageLogs() {
       await messageLogService.cancel(record.uid, record.sendAt)
       message.success('取消成功')
       loadData()
-    } catch (error) {
+    } catch {
       message.error('取消失败')
     }
   }
@@ -70,7 +69,7 @@ export default function MessageLogs() {
       const res = await messageLogService.get(record.uid, record.sendAt)
       setSelectedItem(res.data)
       setDrawerVisible(true)
-    } catch (error) {
+    } catch {
       message.error('加载详情失败')
     }
   }
@@ -83,7 +82,7 @@ export default function MessageLogs() {
       key: 'type',
       width: 100,
       render: (type: MessageType) =>
-        type === MessageType.EMAIL ? (
+        type === MessageType.Email ? (
           <Tag color='blue'>邮件</Tag>
         ) : (
           <Tag color='green'>Webhook</Tag>
@@ -95,13 +94,13 @@ export default function MessageLogs() {
       key: 'status',
       width: 100,
       render: (status: MessageStatus) => {
-        const statusMap = {
-          [MessageStatus.PENDING]: <Tag color='default'>待发送</Tag>,
-          [MessageStatus.SENT]: <Tag color='success'>已发送</Tag>,
-          [MessageStatus.FAILED]: <Tag color='error'>失败</Tag>,
-          [MessageStatus.CANCELLED]: <Tag color='warning'>已取消</Tag>,
+        const statusMap: Partial<Record<MessageStatus, React.ReactNode>> = {
+          [MessageStatus.Pending]: <Tag color='default'>待发送</Tag>,
+          [MessageStatus.Sending]: <Tag color='success'>已发送</Tag>,
+          [MessageStatus.Failed]: <Tag color='error'>失败</Tag>,
+          [MessageStatus.Cancelled]: <Tag color='warning'>已取消</Tag>,
         }
-        return statusMap[status]
+        return statusMap[status] || <Tag color='default'>未知</Tag>
       },
     },
     { title: '消息内容', dataIndex: 'message', key: 'message', ellipsis: true },
@@ -111,7 +110,7 @@ export default function MessageLogs() {
       title: '操作',
       key: 'action',
       width: 200,
-      render: (_: any, record: MessageLogItem) => (
+      render: (_: unknown, record: MessageLogItem) => (
         <Space>
           <Button
             type='link'
@@ -120,7 +119,7 @@ export default function MessageLogs() {
           >
             详情
           </Button>
-          {record.status === MessageStatus.FAILED && (
+          {record.status === MessageStatus.Failed && (
             <Popconfirm
               title='确定重试？'
               onConfirm={() => handleRetry(record)}
@@ -132,7 +131,7 @@ export default function MessageLogs() {
               </Button>
             </Popconfirm>
           )}
-          {record.status === MessageStatus.PENDING && (
+          {record.status === MessageStatus.Pending && (
             <Popconfirm
               title='确定取消？'
               onConfirm={() => handleCancel(record)}
@@ -160,8 +159,8 @@ export default function MessageLogs() {
           allowClear
           onChange={(value) => setFilters({ ...filters, type: value })}
         >
-          <Select.Option value={MessageType.EMAIL}>邮件</Select.Option>
-          <Select.Option value={MessageType.WEBHOOK}>Webhook</Select.Option>
+          <Select.Option value={MessageType.Email}>邮件</Select.Option>
+          <Select.Option value={MessageType.Webhook}>Webhook</Select.Option>
         </Select>
         <Select
           placeholder='状态'
@@ -169,10 +168,10 @@ export default function MessageLogs() {
           allowClear
           onChange={(value) => setFilters({ ...filters, status: value })}
         >
-          <Select.Option value={MessageStatus.PENDING}>待发送</Select.Option>
-          <Select.Option value={MessageStatus.SENT}>已发送</Select.Option>
-          <Select.Option value={MessageStatus.FAILED}>失败</Select.Option>
-          <Select.Option value={MessageStatus.CANCELLED}>已取消</Select.Option>
+          <Select.Option value={MessageStatus.Pending}>待发送</Select.Option>
+          <Select.Option value={MessageStatus.Sending}>已发送</Select.Option>
+          <Select.Option value={MessageStatus.Failed}>失败</Select.Option>
+          <Select.Option value={MessageStatus.Cancelled}>已取消</Select.Option>
         </Select>
         <RangePicker
           showTime
@@ -184,7 +183,7 @@ export default function MessageLogs() {
                 endAtUnix: dates[1]?.unix().toString(),
               })
             } else {
-              const { startAtUnix, endAtUnix, ...rest } = filters
+              const { ...rest } = filters
               setFilters(rest)
             }
           }}
@@ -220,10 +219,12 @@ export default function MessageLogs() {
               {selectedItem.uid}
             </Descriptions.Item>
             <Descriptions.Item label='类型'>
-              {selectedItem.type === MessageType.EMAIL ? '邮件' : 'Webhook'}
+              {selectedItem.type === MessageType.Email ? '邮件' : 'Webhook'}
             </Descriptions.Item>
             <Descriptions.Item label='状态'>
-              {['待发送', '已发送', '失败', '已取消'][selectedItem.status]}
+              {MessageStatus[selectedItem.status] || (
+                <Tag color='default'>{selectedItem.status}</Tag>
+              )}
             </Descriptions.Item>
             <Descriptions.Item label='消息内容'>
               {selectedItem.message}

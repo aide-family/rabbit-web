@@ -13,7 +13,7 @@ import {
 } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
 import { templateService } from '../../api/services'
-import { TemplateItem, Status, AppType } from '../../api/types'
+import { TemplateItem, GlobalStatus, TemplateAPP } from '../../api/types'
 
 export default function Templates() {
   const [data, setData] = useState<TemplateItem[]>([])
@@ -36,7 +36,7 @@ export default function Templates() {
       const res = await templateService.list({ page, pageSize, keyword })
       setData(res.data.items)
       setTotal(res.data.total)
-    } catch (error) {
+    } catch {
       message.error('加载数据失败')
     } finally {
       setLoading(false)
@@ -46,7 +46,7 @@ export default function Templates() {
   const handleCreate = () => {
     setEditingItem(null)
     form.resetFields()
-    form.setFieldsValue({ app: AppType.EMAIL })
+    form.setFieldsValue({ app: TemplateAPP.TEMPLATE_APP_EMAIL })
     setModalVisible(true)
   }
 
@@ -73,7 +73,7 @@ export default function Templates() {
       }
       setModalVisible(false)
       loadData()
-    } catch (error) {
+    } catch {
       message.error('操作失败')
     }
   }
@@ -83,7 +83,7 @@ export default function Templates() {
       await templateService.delete(uid)
       message.success('删除成功')
       loadData()
-    } catch (error) {
+    } catch {
       message.error('删除失败')
     }
   }
@@ -91,11 +91,13 @@ export default function Templates() {
   const handleStatusToggle = async (item: TemplateItem) => {
     try {
       const newStatus =
-        item.status === Status.ENABLED ? Status.DISABLED : Status.ENABLED
+        item.status === GlobalStatus.ENABLED
+          ? GlobalStatus.DISABLED
+          : GlobalStatus.ENABLED
       await templateService.updateStatus(item.uid, newStatus)
       message.success('状态更新成功')
       loadData()
-    } catch (error) {
+    } catch {
       message.error('状态更新失败')
     }
   }
@@ -108,20 +110,24 @@ export default function Templates() {
       dataIndex: 'app',
       key: 'app',
       width: 100,
-      render: (app: AppType) =>
-        app === AppType.EMAIL ? (
-          <Tag color='blue'>邮件</Tag>
-        ) : (
-          <Tag color='green'>Webhook</Tag>
-        ),
+      render: (app: TemplateAPP) => {
+        const appMap: Partial<Record<TemplateAPP, string>> = {
+          [TemplateAPP.TEMPLATE_APP_EMAIL]: '邮件',
+          [TemplateAPP.TEMPLATE_APP_WEBHOOK_OTHER]: 'Webhook',
+          [TemplateAPP.TEMPLATE_APP_WEBHOOK_DINGTALK]: '钉钉',
+          [TemplateAPP.TEMPLATE_APP_WEBHOOK_WECHAT]: '微信',
+          [TemplateAPP.TEMPLATE_APP_WEBHOOK_FEISHU]: '飞书',
+        }
+        return appMap[app] || <Tag color='default'>未知</Tag>
+      },
     },
     {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
       width: 80,
-      render: (status: Status) =>
-        status === Status.ENABLED ? (
+      render: (status: GlobalStatus) =>
+        status === GlobalStatus.ENABLED ? (
           <Tag color='success'>启用</Tag>
         ) : (
           <Tag color='default'>禁用</Tag>
@@ -132,7 +138,7 @@ export default function Templates() {
       title: '操作',
       key: 'action',
       width: 200,
-      render: (_: any, record: TemplateItem) => (
+      render: (_: unknown, record: TemplateItem) => (
         <Space>
           <Button type='link' size='small' onClick={() => handleEdit(record)}>
             编辑
@@ -142,7 +148,7 @@ export default function Templates() {
             size='small'
             onClick={() => handleStatusToggle(record)}
           >
-            {record.status === Status.ENABLED ? '禁用' : '启用'}
+            {record.status === GlobalStatus.ENABLED ? '禁用' : '启用'}
           </Button>
           <Popconfirm
             title='确定删除？'
@@ -218,8 +224,21 @@ export default function Templates() {
             rules={[{ required: true, message: '请选择应用类型' }]}
           >
             <Select>
-              <Select.Option value={AppType.EMAIL}>邮件</Select.Option>
-              <Select.Option value={AppType.WEBHOOK}>Webhook</Select.Option>
+              <Select.Option value={TemplateAPP.TEMPLATE_APP_EMAIL}>
+                邮件
+              </Select.Option>
+              <Select.Option value={TemplateAPP.TEMPLATE_APP_WEBHOOK_OTHER}>
+                Webhook
+              </Select.Option>
+              <Select.Option value={TemplateAPP.TEMPLATE_APP_WEBHOOK_DINGTALK}>
+                钉钉
+              </Select.Option>
+              <Select.Option value={TemplateAPP.TEMPLATE_APP_WEBHOOK_WECHAT}>
+                微信
+              </Select.Option>
+              <Select.Option value={TemplateAPP.TEMPLATE_APP_WEBHOOK_FEISHU}>
+                飞书
+              </Select.Option>
             </Select>
           </Form.Item>
           <Form.Item
