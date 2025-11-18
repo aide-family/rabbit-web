@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import {
   Table,
   Button,
@@ -12,7 +12,7 @@ import {
   Tag,
 } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
-import { webhookService } from '../../../api/services'
+import { webhookService } from '../../../api/webhook'
 import {
   WebhookItem,
   GlobalStatus,
@@ -20,6 +20,7 @@ import {
   HTTPMethod,
   TemplateAPP,
 } from '../../../api/types'
+import { useNamespace } from '../../../contexts/NamespaceContext'
 
 export default function WebhookConfigs() {
   const [data, setData] = useState<WebhookItem[]>([])
@@ -31,12 +32,9 @@ export default function WebhookConfigs() {
   const [modalVisible, setModalVisible] = useState(false)
   const [editingItem, setEditingItem] = useState<WebhookItem | null>(null)
   const [form] = Form.useForm()
+  const { currentNamespace } = useNamespace()
 
-  useEffect(() => {
-    loadData()
-  }, [page, pageSize, keyword])
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true)
       const res = await webhookService.list({ page, pageSize, keyword })
@@ -47,7 +45,11 @@ export default function WebhookConfigs() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [page, pageSize, keyword])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData, currentNamespace])
 
   const handleCreate = () => {
     setEditingItem(null)

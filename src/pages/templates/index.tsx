@@ -12,8 +12,9 @@ import {
   Tag,
 } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
-import { templateService } from '../../api/services'
+import { templateService } from '../../api/template'
 import { TemplateItem, GlobalStatus, TemplateAPP } from '../../api/types'
+import { useNamespace } from '../../contexts/NamespaceContext'
 
 export default function Templates() {
   const [data, setData] = useState<TemplateItem[]>([])
@@ -25,10 +26,11 @@ export default function Templates() {
   const [modalVisible, setModalVisible] = useState(false)
   const [editingItem, setEditingItem] = useState<TemplateItem | null>(null)
   const [form] = Form.useForm()
+  const { currentNamespace } = useNamespace()
 
   useEffect(() => {
     loadData()
-  }, [page, pageSize, keyword])
+  }, [page, pageSize, keyword, currentNamespace])
 
   const loadData = async () => {
     try {

@@ -15,8 +15,9 @@ import {
 } from 'antd'
 import { ColumnType } from 'antd/es/table'
 import { useCallback, useEffect, useState } from 'react'
-import { namespaceService } from '../../api/services'
+import { namespaceService } from '../../api/namespace'
 import { GlobalStatus, NamespaceItem } from '../../api/types'
+import { useNamespace } from '../../contexts/NamespaceContext'
 
 export default function Namespaces() {
   const [data, setData] = useState<NamespaceItem[]>([])
@@ -29,8 +30,10 @@ export default function Namespaces() {
   const [editingItem, setEditingItem] = useState<NamespaceItem | null>(null)
   const [drawerVisible, setDrawerVisible] = useState(false)
   const [detailItem, setDetailItem] = useState<NamespaceItem | null>(null)
+  const [deletingUid, setDeletingUid] = useState<string | null>(null)
   const [deletingName, setDeletingName] = useState<string | null>(null)
   const [form] = Form.useForm()
+  const { refreshNamespaces } = useNamespace()
 
   const loadData = useCallback(async () => {
     try {
@@ -58,7 +61,7 @@ export default function Namespaces() {
   const handleEdit = async (item: NamespaceItem) => {
     try {
       setEditingItem(item)
-      const res = await namespaceService.get(item.name)
+      const res = await namespaceService.get(item.uid)
       const ns = res.data
       form.setFieldsValue({
         name: ns.name,
@@ -91,29 +94,32 @@ export default function Namespaces() {
       }
 
       if (editingItem) {
-        await namespaceService.save({
-          name: editingItem.name,
+        await namespaceService.update(editingItem.uid, {
+          name: values.name,
           metadata,
         })
         message.success('更新成功')
       } else {
-        await namespaceService.save({ name: values.name, metadata })
+        await namespaceService.create({ name: values.name, metadata })
         message.success('创建成功')
       }
       setModalVisible(false)
       setEditingItem(null)
       loadData()
+      refreshNamespaces()
     } catch {
       message.error('操作失败')
     }
   }
 
-  const handleDelete = async (name: string) => {
+  const handleDelete = async (uid: string) => {
     try {
-      await namespaceService.delete(name)
+      await namespaceService.delete(uid)
       message.success('删除成功')
+      setDeletingUid(null)
       setDeletingName(null)
       loadData()
+      refreshNamespaces()
     } catch {
       message.error('删除失败')
     }
@@ -125,7 +131,7 @@ export default function Namespaces() {
         item.status === GlobalStatus.ENABLED
           ? GlobalStatus.DISABLED
           : GlobalStatus.ENABLED
-      await namespaceService.updateStatus(item.name, newStatus)
+      await namespaceService.updateStatus(item.uid, newStatus)
       message.success('状态更新成功')
       loadData()
     } catch {
@@ -142,6 +148,7 @@ export default function Namespaces() {
     if (key === 'status') {
       handleStatusToggle(record)
     } else if (key === 'delete') {
+      setDeletingUid(record.uid)
       setDeletingName(record.name)
     }
   }
@@ -334,9 +341,12 @@ export default function Namespaces() {
 
       <Modal
         title='确认删除'
-        open={!!deletingName}
-        onOk={() => deletingName && handleDelete(deletingName)}
-        onCancel={() => setDeletingName(null)}
+        open={!!deletingUid}
+        onOk={() => deletingUid && handleDelete(deletingUid)}
+        onCancel={() => {
+          setDeletingUid(null)
+          setDeletingName(null)
+        }}
         okText='确定'
         cancelText='取消'
         okButtonProps={{ danger: true }}

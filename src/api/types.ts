@@ -61,6 +61,7 @@ export interface PaginatedResponse<T> {
 }
 
 export interface NamespaceItem {
+  uid: string
   name: string
   metadata?: Record<string, string>
   createdAt: string
@@ -109,6 +110,9 @@ export interface MessageLogItem {
   status: MessageStatus
   sendAt: string
   message: string
+  config: string
+  retryTotal: number
+  lastError?: string
   createdAt: string
   updatedAt: string
 }
@@ -117,4 +121,9 @@ export interface HealthCheckReply {
   status: string
   message: string
   timestamp: string
+}
+
+export interface SendReply {
+  code: number
+  message: string
 }

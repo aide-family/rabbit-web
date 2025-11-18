@@ -5,7 +5,7 @@ import {
   CloseCircleOutlined,
   ReloadOutlined,
 } from '@ant-design/icons'
-import { healthService } from '../../api/services'
+import { healthService } from '../../api/health'
 import { HealthCheckReply } from '../../api/types'
 
 export default function Health() {

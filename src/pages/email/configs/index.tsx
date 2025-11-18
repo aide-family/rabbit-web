@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import {
   Table,
   Button,
@@ -12,8 +12,9 @@ import {
   Tag,
 } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
-import { emailService } from '../../../api/services'
+import { emailService } from '../../../api/email'
 import { EmailConfigItem, GlobalStatus } from '../../../api/types'
+import { useNamespace } from '../../../contexts/NamespaceContext'
 
 export default function EmailConfigs() {
   const [data, setData] = useState<EmailConfigItem[]>([])
@@ -25,12 +26,9 @@ export default function EmailConfigs() {
   const [modalVisible, setModalVisible] = useState(false)
   const [editingItem, setEditingItem] = useState<EmailConfigItem | null>(null)
   const [form] = Form.useForm()
+  const { currentNamespace } = useNamespace()
 
-  useEffect(() => {
-    loadData()
-  }, [page, pageSize, keyword])
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true)
       const res = await emailService.list({ page, pageSize, keyword })
@@ -41,7 +39,11 @@ export default function EmailConfigs() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [page, pageSize, keyword])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData, currentNamespace])
 
   const handleCreate = () => {
     setEditingItem(null)

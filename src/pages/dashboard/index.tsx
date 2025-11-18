@@ -1,29 +1,28 @@
-import { useEffect, useState } from 'react'
-import { Card, Row, Col, Statistic, Table, Tag, Alert, Spin } from 'antd'
 import {
-  AppstoreOutlined,
-  MailOutlined,
   ApiOutlined,
-  FileTextOutlined,
+  AppstoreOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
+  FileTextOutlined,
+  MailOutlined,
 } from '@ant-design/icons'
+import { Alert, Card, Col, Row, Spin, Statistic, Table, Tag } from 'antd'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { emailService } from '../../api/email'
+import { healthService } from '../../api/health'
+import { messageLogService } from '../../api/messagelog'
+import { namespaceService } from '../../api/namespace'
+import { templateService } from '../../api/template'
 import {
-  namespaceService,
-  emailService,
-  webhookService,
-  templateService,
-  messageLogService,
-  healthService,
-} from '../../api/services'
-import {
-  MessageLogItem,
-  HealthCheckReply,
   GlobalStatus,
+  HealthCheckReply,
+  MessageLogItem,
   MessageStatus,
   MessageType,
 } from '../../api/types'
+import { webhookService } from '../../api/webhook'
+import { useNamespace } from '../../contexts/NamespaceContext'
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true)
@@ -35,10 +34,11 @@ export default function Dashboard() {
   })
   const [recentLogs, setRecentLogs] = useState<MessageLogItem[]>([])
   const [health, setHealth] = useState<HealthCheckReply | null>(null)
+  const { currentNamespace } = useNamespace()
 
   useEffect(() => {
     loadDashboardData()
-  }, [])
+  }, [currentNamespace])
 
   const loadDashboardData = async () => {
     try {

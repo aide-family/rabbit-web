@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Layout as AntLayout, Menu, Avatar, Dropdown, Button, theme } from 'antd';
+import { Layout as AntLayout, Menu, Avatar, Dropdown, Button, theme, Select, Space } from 'antd';
 import {
   DashboardOutlined,
   AppstoreOutlined,
@@ -15,6 +15,7 @@ import {
   MenuUnfoldOutlined,
 } from '@ant-design/icons';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useNamespace } from '../contexts/NamespaceContext';
 
 const { Header, Sider, Content } = AntLayout;
 
@@ -23,9 +24,11 @@ export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { token } = theme.useToken();
+  const { currentNamespace, namespaces, setCurrentNamespace } = useNamespace();
 
   const handleLogout = () => {
     localStorage.removeItem('auth_token');
+    localStorage.removeItem('current_namespace');
     navigate('/login');
   };
 
@@ -100,12 +103,29 @@ export default function Layout() {
             onClick={() => setCollapsed(!collapsed)}
             style={{ fontSize: 16 }}
           />
-          <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
-            <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-              <Avatar icon={<UserOutlined />} style={{ marginRight: 8 }} />
-              <span>管理员</span>
-            </div>
-          </Dropdown>
+          <Space>
+            <Select
+              placeholder="选择命名空间"
+              value={currentNamespace || undefined}
+              onChange={(value) => setCurrentNamespace(value || null)}
+              style={{ minWidth: 200 }}
+              allowClear
+              showSearch
+              filterOption={(input, option) =>
+                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+              }
+              options={namespaces.map(ns => ({
+                label: ns.name,
+                value: ns.name,
+              }))}
+            />
+            <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
+              <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                <Avatar icon={<UserOutlined />} style={{ marginRight: 8 }} />
+                <span>管理员</span>
+              </div>
+            </Dropdown>
+          </Space>
         </Header>
         <Content style={{ margin: '24px 16px', padding: 24, background: token.colorBgContainer, minHeight: 280 }}>
           <Outlet />

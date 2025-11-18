@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { ConfigProvider } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
+import { NamespaceProvider } from './contexts/NamespaceContext'
 import Layout from './components/Layout'
 import Login from './pages/auth'
 import Dashboard from './pages/dashboard'
@@ -27,7 +28,9 @@ function App() {
             path='/'
             element={
               <PrivateRoute>
-                <Layout />
+                <NamespaceProvider>
+                  <Layout />
+                </NamespaceProvider>
               </PrivateRoute>
             }
           >

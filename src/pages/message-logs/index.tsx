@@ -12,8 +12,9 @@ import {
   Descriptions,
 } from 'antd'
 import { ReloadOutlined, StopOutlined } from '@ant-design/icons'
-import { MessageLogFilter, messageLogService } from '../../api/services'
+import { messageLogService, type ListMessageLogParams } from '../../api/messagelog'
 import { MessageLogItem, MessageType, MessageStatus } from '../../api/types'
+import { useNamespace } from '../../contexts/NamespaceContext'
 
 const { RangePicker } = DatePicker
 
@@ -23,13 +24,14 @@ export default function MessageLogs() {
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
-  const [filters, setFilters] = useState<MessageLogFilter>({})
+  const [filters, setFilters] = useState<ListMessageLogParams>({})
   const [selectedItem, setSelectedItem] = useState<MessageLogItem | null>(null)
   const [drawerVisible, setDrawerVisible] = useState(false)
+  const { currentNamespace } = useNamespace()
 
   useEffect(() => {
     loadData()
-  }, [page, pageSize, filters])
+  }, [page, pageSize, filters, currentNamespace])
 
   const loadData = async () => {
     try {
@@ -46,7 +48,7 @@ export default function MessageLogs() {
 
   const handleRetry = async (record: MessageLogItem) => {
     try {
-      await messageLogService.retry(record.uid, record.sendAt)
+      await messageLogService.retry(record.uid)
       message.success('重试请求已提交')
       loadData()
     } catch {
@@ -56,7 +58,7 @@ export default function MessageLogs() {
 
   const handleCancel = async (record: MessageLogItem) => {
     try {
-      await messageLogService.cancel(record.uid, record.sendAt)
+      await messageLogService.cancel(record.uid)
       message.success('取消成功')
       loadData()
     } catch {
@@ -66,7 +68,7 @@ export default function MessageLogs() {
 
   const handleViewDetail = async (record: MessageLogItem) => {
     try {
-      const res = await messageLogService.get(record.uid, record.sendAt)
+      const res = await messageLogService.get(record.uid)
       setSelectedItem(res.data)
       setDrawerVisible(true)
     } catch {

@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Tabs, Card, Form, Select, Input, Button, message, Space } from 'antd'
 import { SendOutlined } from '@ant-design/icons'
-import {
-  senderService,
-  emailService,
-  webhookService,
-  templateService,
-} from '../../api/services'
+import { senderService } from '../../api/sender'
+import { emailService } from '../../api/email'
+import { webhookService } from '../../api/webhook'
+import { templateService } from '../../api/template'
 import {
   EmailConfigItem,
   WebhookItem,
@@ -14,6 +12,7 @@ import {
   GlobalStatus,
   TemplateAPP,
 } from '../../api/types'
+import { useNamespace } from '../../contexts/NamespaceContext'
 
 export default function Sender() {
   const [emailConfigs, setEmailConfigs] = useState<EmailConfigItem[]>([])
@@ -27,10 +26,11 @@ export default function Sender() {
     'direct'
   )
   const [loading, setLoading] = useState(false)
+  const { currentNamespace } = useNamespace()
 
   useEffect(() => {
     loadConfigs()
-  }, [])
+  }, [currentNamespace])
 
   const loadConfigs = async () => {
     try {
