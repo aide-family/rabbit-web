@@ -65,6 +65,7 @@ export default function Namespaces() {
         metadataJson: ns.metadata ? JSON.stringify(ns.metadata, null, 2) : '',
       })
       setModalVisible(true)
+      console.log(ns, 'ns')
     } catch {
       message.error('加载详情失败')
     }
