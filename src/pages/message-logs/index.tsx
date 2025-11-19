@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import {
-  Table,
   Tag,
   Button,
   Space,
@@ -10,11 +9,13 @@ import {
   Popconfirm,
   Drawer,
   Descriptions,
+  theme,
 } from 'antd'
 import { ReloadOutlined, StopOutlined } from '@ant-design/icons'
 import { messageLogService, type ListMessageLogParams } from '../../api/messagelog'
 import { MessageLogItem, MessageType, MessageStatus } from '../../api/types'
 import { useNamespace } from '../../contexts/NamespaceContext'
+import AutoTable from '../../components/Table'
 
 const { RangePicker } = DatePicker
 
@@ -28,6 +29,7 @@ export default function MessageLogs() {
   const [selectedItem, setSelectedItem] = useState<MessageLogItem | null>(null)
   const [drawerVisible, setDrawerVisible] = useState(false)
   const { currentNamespace } = useNamespace()
+  const { token } = theme.useToken()
 
   useEffect(() => {
     loadData()
@@ -192,20 +194,24 @@ export default function MessageLogs() {
         />
       </div>
 
-      <Table
+      <AutoTable
         dataSource={data}
         columns={columns}
         rowKey='uid'
         loading={loading}
-        pagination={{
-          current: page,
-          pageSize,
-          total,
-          onChange: (p, ps) => {
-            setPage(p)
-            setPageSize(ps)
-          },
+        total={total}
+        pageSize={pageSize}
+        pageNum={page}
+        handleTurnPage={(p, ps) => {
+          setPage(p)
+          setPageSize(ps)
         }}
+        showSizeChanger={true}
+        style={{
+          background: token.colorBgContainer,
+          borderRadius: token.borderRadius,
+        }}
+        size='middle'
       />
 
       <Drawer

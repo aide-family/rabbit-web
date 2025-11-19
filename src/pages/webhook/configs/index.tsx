@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
 import {
-  Table,
   Button,
   Modal,
   Form,
@@ -10,6 +9,7 @@ import {
   Popconfirm,
   Space,
   Tag,
+  theme,
 } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
 import { webhookService } from '../../../api/webhook'
@@ -20,6 +20,7 @@ import {
   HTTPMethod,
 } from '../../../api/types'
 import { useNamespace } from '../../../contexts/NamespaceContext'
+import AutoTable from '../../../components/Table'
 
 export default function WebhookConfigs() {
   const [data, setData] = useState<WebhookItem[]>([])
@@ -32,6 +33,7 @@ export default function WebhookConfigs() {
   const [editingItem, setEditingItem] = useState<WebhookItem | null>(null)
   const [form] = Form.useForm()
   const { currentNamespace } = useNamespace()
+  const { token } = theme.useToken()
 
   const loadData = useCallback(async () => {
     try {
@@ -207,20 +209,24 @@ export default function WebhookConfigs() {
         </Button>
       </div>
 
-      <Table
+      <AutoTable
         dataSource={data}
         columns={columns}
         rowKey='uid'
         loading={loading}
-        pagination={{
-          current: page,
-          pageSize,
-          total,
-          onChange: (p, ps) => {
-            setPage(p)
-            setPageSize(ps)
-          },
+        total={total}
+        pageSize={pageSize}
+        pageNum={page}
+        handleTurnPage={(p, ps) => {
+          setPage(p)
+          setPageSize(ps)
         }}
+        showSizeChanger={true}
+        style={{
+          background: token.colorBgContainer,
+          borderRadius: token.borderRadius,
+        }}
+        size='middle'
       />
 
       <Modal

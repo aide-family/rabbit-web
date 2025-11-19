@@ -6,7 +6,7 @@ import {
   FileTextOutlined,
   MailOutlined,
 } from '@ant-design/icons'
-import { Alert, Card, Col, Row, Spin, Statistic, Table, Tag } from 'antd'
+import { Alert, Card, Col, Row, Spin, Statistic, Tag, theme } from 'antd'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { emailService } from '../../api/email'
@@ -23,6 +23,7 @@ import {
 } from '../../api/types'
 import { webhookService } from '../../api/webhook'
 import { useNamespace } from '../../contexts/NamespaceContext'
+import AutoTable from '../../components/Table'
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true)
@@ -35,6 +36,7 @@ export default function Dashboard() {
   const [recentLogs, setRecentLogs] = useState<MessageLogItem[]>([])
   const [health, setHealth] = useState<HealthCheckReply | null>(null)
   const { currentNamespace } = useNamespace()
+  const { token } = theme.useToken()
 
   useEffect(() => {
     loadDashboardData()
@@ -224,11 +226,19 @@ export default function Dashboard() {
       )}
 
       <Card title='最近消息日志' style={{ marginTop: 24 }}>
-        <Table
+        <AutoTable
           dataSource={recentLogs}
           columns={columns}
           rowKey='uid'
-          pagination={false}
+          total={recentLogs.length}
+          pageSize={10}
+          pageNum={1}
+          showSizeChanger={false}
+          style={{
+            background: token.colorBgContainer,
+            borderRadius: token.borderRadius,
+          }}
+          size='middle'
         />
       </Card>
     </div>

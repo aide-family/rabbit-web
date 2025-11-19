@@ -10,14 +10,15 @@ import {
   message,
   Modal,
   Space,
-  Table,
   Tag,
+  theme,
 } from 'antd'
 import { ColumnType } from 'antd/es/table'
 import { useCallback, useEffect, useState } from 'react'
 import { namespaceService } from '../../api/namespace'
 import { GlobalStatus, NamespaceItem } from '../../api/types'
 import { useNamespace } from '../../contexts/NamespaceContext'
+import AutoTable from '../../components/Table'
 
 export default function Namespaces() {
   const [data, setData] = useState<NamespaceItem[]>([])
@@ -34,6 +35,7 @@ export default function Namespaces() {
   const [deletingName, setDeletingName] = useState<string | null>(null)
   const [form] = Form.useForm()
   const { refreshNamespaces } = useNamespace()
+  const { token } = theme.useToken()
 
   const loadData = useCallback(async () => {
     try {
@@ -267,20 +269,24 @@ export default function Namespaces() {
         </Button>
       </div>
 
-      <Table
+      <AutoTable
         dataSource={data}
         columns={columns}
-        rowKey='name'
+        rowKey='uid'
         loading={loading}
-        pagination={{
-          current: page,
-          pageSize,
-          total,
-          onChange: (p, ps) => {
-            setPage(p)
-            setPageSize(ps)
-          },
+        total={total}
+        pageSize={pageSize}
+        pageNum={page}
+        handleTurnPage={(p, ps) => {
+          setPage(p)
+          setPageSize(ps)
         }}
+        showSizeChanger={true}
+        style={{
+          background: token.colorBgContainer,
+          borderRadius: token.borderRadius,
+        }}
+        size='middle'
       />
 
       <Modal

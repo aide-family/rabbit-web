@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import {
-  Table,
   Button,
   Modal,
   Form,
@@ -10,11 +9,13 @@ import {
   Popconfirm,
   Space,
   Tag,
+  theme,
 } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
 import { templateService } from '../../api/template'
 import { TemplateItem, GlobalStatus, TemplateAPP } from '../../api/types'
 import { useNamespace } from '../../contexts/NamespaceContext'
+import AutoTable from '../../components/Table'
 
 export default function Templates() {
   const [data, setData] = useState<TemplateItem[]>([])
@@ -27,12 +28,9 @@ export default function Templates() {
   const [editingItem, setEditingItem] = useState<TemplateItem | null>(null)
   const [form] = Form.useForm()
   const { currentNamespace } = useNamespace()
+  const { token } = theme.useToken()
 
-  useEffect(() => {
-    loadData()
-  }, [page, pageSize, keyword, currentNamespace])
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true)
       const res = await templateService.list({ page, pageSize, keyword })
@@ -43,7 +41,11 @@ export default function Templates() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [page, pageSize, keyword])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData, currentNamespace])
 
   const handleCreate = () => {
     setEditingItem(null)
@@ -187,20 +189,24 @@ export default function Templates() {
         </Button>
       </div>
 
-      <Table
+      <AutoTable
         dataSource={data}
         columns={columns}
         rowKey='uid'
         loading={loading}
-        pagination={{
-          current: page,
-          pageSize,
-          total,
-          onChange: (p, ps) => {
-            setPage(p)
-            setPageSize(ps)
-          },
+        total={total}
+        pageSize={pageSize}
+        pageNum={page}
+        handleTurnPage={(p, ps) => {
+          setPage(p)
+          setPageSize(ps)
         }}
+        showSizeChanger={true}
+        style={{
+          background: token.colorBgContainer,
+          borderRadius: token.borderRadius,
+        }}
+        size='middle'
       />
 
       <Modal

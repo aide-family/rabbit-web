@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
 import {
-  Table,
   Button,
   Modal,
   Form,
@@ -10,11 +9,13 @@ import {
   Popconfirm,
   Space,
   Tag,
+  theme,
 } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
 import { emailService } from '../../../api/email'
 import { EmailConfigItem, GlobalStatus } from '../../../api/types'
 import { useNamespace } from '../../../contexts/NamespaceContext'
+import AutoTable from '../../../components/Table'
 
 export default function EmailConfigs() {
   const [data, setData] = useState<EmailConfigItem[]>([])
@@ -27,6 +28,7 @@ export default function EmailConfigs() {
   const [editingItem, setEditingItem] = useState<EmailConfigItem | null>(null)
   const [form] = Form.useForm()
   const { currentNamespace } = useNamespace()
+  const { token } = theme.useToken()
 
   const loadData = useCallback(async () => {
     try {
@@ -169,20 +171,24 @@ export default function EmailConfigs() {
         </Button>
       </div>
 
-      <Table
+      <AutoTable
         dataSource={data}
         columns={columns}
         rowKey='uid'
         loading={loading}
-        pagination={{
-          current: page,
-          pageSize,
-          total,
-          onChange: (p, ps) => {
-            setPage(p)
-            setPageSize(ps)
-          },
+        total={total}
+        pageSize={pageSize}
+        pageNum={page}
+        handleTurnPage={(p, ps) => {
+          setPage(p)
+          setPageSize(ps)
         }}
+        showSizeChanger={true}
+        style={{
+          background: token.colorBgContainer,
+          borderRadius: token.borderRadius,
+        }}
+        size='middle'
       />
 
       <Modal
