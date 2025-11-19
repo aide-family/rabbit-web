@@ -1,50 +1,50 @@
 export enum WebhookAPP {
-  WebhookAPP_UNKNOWN = 0,
-  OTHER = 1,
-  DINGTALK = 2,
-  WECHAT = 3,
-  FEISHU = 4,
+  WebhookAPP_UNKNOWN = 'WebhookAPP_UNKNOWN',
+  OTHER = 'OTHER',
+  DINGTALK = 'DINGTALK',
+  WECHAT = 'WECHAT',
+  FEISHU = 'FEISHU',
 }
 
 export enum HTTPMethod {
-  HTTPMethod_UNKNOWN = 0,
-  GET = 1,
-  POST = 2,
-  PUT = 3,
-  DELETE = 4,
-  PATCH = 5,
+  HTTPMethod_UNKNOWN = 'HTTPMethod_UNKNOWN',
+  GET = 'GET',
+  POST = 'POST',
+  PUT = 'PUT',
+  DELETE = 'DELETE',
+  PATCH = 'PATCH',
 }
 
 export enum GlobalStatus {
-  GlobalStatus_UNKNOWN = 0,
-  ENABLED = 1,
-  DISABLED = 2,
+  GlobalStatus_UNKNOWN = 'GlobalStatus_UNKNOWN',
+  ENABLED = 'ENABLED',
+  DISABLED = 'DISABLED',
 }
 
 export enum MessageStatus {
-  MessageStatus_UNKNOWN = 0,
-  Pending = 1,
-  Sending = 2,
-  Sent = 3,
-  Failed = 4,
-  Cancelled = 5,
+  MessageStatus_UNKNOWN = 'MessageStatus_UNKNOWN',
+  Pending = 'Pending',
+  Sending = 'Sending',
+  Sent = 'Sent',
+  Failed = 'Failed',
+  Cancelled = 'Cancelled',
 }
 
 export enum MessageType {
-  MessageType_UNKNOWN = 0,
-  Email = 1,
-  Webhook = 2,
-  SMS = 3,
+  MessageType_UNKNOWN = 'MessageType_UNKNOWN',
+  Email = 'Email',
+  Webhook = 'Webhook',
+  SMS = 'SMS',
 }
 
 export enum TemplateAPP {
-  TemplateAPP_UNKNOWN = 0,
-  TEMPLATE_APP_EMAIL = 1,
-  TEMPLATE_APP_SMS = 2,
-  TEMPLATE_APP_WEBHOOK_OTHER = 3,
-  TEMPLATE_APP_WEBHOOK_DINGTALK = 4,
-  TEMPLATE_APP_WEBHOOK_WECHAT = 5,
-  TEMPLATE_APP_WEBHOOK_FEISHU = 6,
+  TemplateAPP_UNKNOWN = 'TemplateAPP_UNKNOWN',
+  TEMPLATE_APP_EMAIL = 'TEMPLATE_APP_EMAIL',
+  TEMPLATE_APP_SMS = 'TEMPLATE_APP_SMS',
+  TEMPLATE_APP_WEBHOOK_OTHER = 'TEMPLATE_APP_WEBHOOK_OTHER',
+  TEMPLATE_APP_WEBHOOK_DINGTALK = 'TEMPLATE_APP_WEBHOOK_DINGTALK',
+  TEMPLATE_APP_WEBHOOK_WECHAT = 'TEMPLATE_APP_WEBHOOK_WECHAT',
+  TEMPLATE_APP_WEBHOOK_FEISHU = 'TEMPLATE_APP_WEBHOOK_FEISHU',
 }
 
 export interface PaginationParams {

@@ -15,10 +15,10 @@ apiClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
-    
+
     // 除了 namespace 接口外，其他接口都需要携带 X-Namespace header
-    const isNamespaceApi = 
-      config.url?.startsWith('/v1/namespace') || 
+    const isNamespaceApi =
+      config.url?.startsWith('/v1/namespace') ||
       config.url?.startsWith('/v1/namespaces') ||
       config.url === '/health'
     if (!isNamespaceApi) {
@@ -27,7 +27,7 @@ apiClient.interceptors.request.use(
         config.headers['X-Namespace'] = currentNamespace
       }
     }
-    
+
     return config
   },
   (error) => {

@@ -36,12 +36,10 @@ export const templateService = {
       params,
     }),
   get: (uid: string) => apiClient.get<TemplateItem>(`/v1/template/${uid}`),
-  create: (data: CreateTemplateRequest) =>
-    apiClient.post('/v1/template', data),
+  create: (data: CreateTemplateRequest) => apiClient.post('/v1/template', data),
   update: (uid: string, data: Omit<UpdateTemplateRequest, 'uid'>) =>
     apiClient.put(`/v1/template/${uid}`, { uid, ...data }),
   updateStatus: (uid: string, status: GlobalStatus) =>
     apiClient.put(`/v1/template/${uid}/status`, { uid, status }),
   delete: (uid: string) => apiClient.delete(`/v1/template/${uid}`),
 }
-

@@ -18,7 +18,6 @@ import {
   GlobalStatus,
   WebhookAPP,
   HTTPMethod,
-  TemplateAPP,
 } from '../../../api/types'
 import { useNamespace } from '../../../contexts/NamespaceContext'
 
@@ -71,13 +70,38 @@ export default function WebhookConfigs() {
       if (editingItem) {
         await webhookService.update(editingItem.uid, values)
         message.success('更新成功')
+        setModalVisible(false)
+        setEditingItem(null)
+        form.resetFields()
+        await loadData()
       } else {
         await webhookService.create(values)
         message.success('创建成功')
+        setModalVisible(false)
+        setEditingItem(null)
+        form.resetFields()
+        // 创建成功后重置到第一页并清空搜索，让 useEffect 自动刷新
+        setPage(1)
+        setKeyword('')
+        // 由于状态更新是异步的，需要手动触发一次加载
+        // 使用新的参数直接加载
+        try {
+          setLoading(true)
+          const res = await webhookService.list({
+            page: 1,
+            pageSize,
+            keyword: '',
+          })
+          setData(res.data.items)
+          setTotal(res.data.total)
+        } catch {
+          message.error('加载数据失败')
+        } finally {
+          setLoading(false)
+        }
       }
-      setModalVisible(false)
-      loadData()
-    } catch {
+    } catch (error) {
+      console.error('操作失败:', error)
       message.error('操作失败')
     }
   }
@@ -116,8 +140,7 @@ export default function WebhookConfigs() {
       key: 'method',
       width: 100,
       render: (method: HTTPMethod) => {
-        const methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']
-        return <Tag>{methods[method]}</Tag>
+        return <Tag>{method}</Tag>
       },
     },
     {
@@ -243,21 +266,10 @@ export default function WebhookConfigs() {
             rules={[{ required: true, message: '请选择应用类型' }]}
           >
             <Select>
-              <Select.Option value={TemplateAPP.TEMPLATE_APP_EMAIL}>
-                邮件
-              </Select.Option>
-              <Select.Option value={TemplateAPP.TEMPLATE_APP_WEBHOOK_OTHER}>
-                Webhook
-              </Select.Option>
-              <Select.Option value={TemplateAPP.TEMPLATE_APP_WEBHOOK_DINGTALK}>
-                钉钉
-              </Select.Option>
-              <Select.Option value={TemplateAPP.TEMPLATE_APP_WEBHOOK_WECHAT}>
-                微信
-              </Select.Option>
-              <Select.Option value={TemplateAPP.TEMPLATE_APP_WEBHOOK_FEISHU}>
-                飞书
-              </Select.Option>
+              <Select.Option value={WebhookAPP.OTHER}>其他</Select.Option>
+              <Select.Option value={WebhookAPP.DINGTALK}>钉钉</Select.Option>
+              <Select.Option value={WebhookAPP.WECHAT}>微信</Select.Option>
+              <Select.Option value={WebhookAPP.FEISHU}>飞书</Select.Option>
             </Select>
           </Form.Item>
           <Form.Item name='secret' label='签名密钥'>
