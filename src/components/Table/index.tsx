@@ -1,18 +1,17 @@
 import { Pagination, Table, TableProps } from 'antd'
 import { ColumnGroupType, ColumnType } from 'antd/es/table'
 import React from 'react'
-import './index.css'
-
 export type AutoTableColumnType<T> = ColumnType<T> | ColumnGroupType<T>
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface AutoTableProps<T = any> extends TableProps<T> {
   columns: AutoTableColumnType<T>[]
   dataSource: T[]
   total?: number
-  handleTurnPage?: (page: number, pageSize: number) => void
+  handleTurnPage?: (e: number, size: number) => void
   showQuickJumper?: boolean
+  onShowSizeChange?: () => Promise<T[]>
   showSizeChanger?: boolean
+  selectedRowKey?: string
   pageSize?: number
   pageNum?: number
   style?: React.CSSProperties
@@ -29,8 +28,8 @@ export const AutoTable: React.FC<AutoTableProps> = (props) => {
     handleTurnPage,
     showQuickJumper,
     showSizeChanger,
+    onShowSizeChange,
     style,
-    ...restProps
   } = props
 
   const showTotal = (total: number) => {
@@ -38,9 +37,9 @@ export const AutoTable: React.FC<AutoTableProps> = (props) => {
   }
 
   return (
-    <div className="a_table">
+    <div className='a_table'>
       <Table
-        {...restProps}
+        {...props}
         columns={columns}
         dataSource={dataSource}
         pagination={false}
@@ -48,20 +47,19 @@ export const AutoTable: React.FC<AutoTableProps> = (props) => {
       />
       {total && total > 0 ? (
         <Pagination
-          className="a_table_pagination"
+          className='text-right p-0 inline-block w-full mt-4'
           total={total}
-          onChange={(page, size) => handleTurnPage?.(page, size)}
+          onChange={(e, size) => handleTurnPage?.(e, size)}
           pageSize={pageSize}
           defaultCurrent={1}
           current={pageNum}
           showQuickJumper={showQuickJumper}
-          showSizeChanger={showSizeChanger}
+          showSizeChanger={showSizeChanger} // 是否展示切换size 大于50时默认为true，写死
+          onShowSizeChange={onShowSizeChange}
           showTotal={showTotal}
         />
       ) : null}
     </div>
   )
 }
-
 export default AutoTable
-

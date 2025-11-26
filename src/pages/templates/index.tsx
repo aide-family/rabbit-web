@@ -1,267 +1,345 @@
-import { useEffect, useState, useCallback } from 'react'
-import {
-  Button,
-  Modal,
-  Form,
-  Input,
-  Select,
-  message,
-  Popconfirm,
-  Space,
-  Tag,
-  theme,
-} from 'antd'
-import { PlusOutlined } from '@ant-design/icons'
-import { templateService } from '../../api/template'
-import { TemplateItem, GlobalStatus, TemplateAPP } from '../../api/types'
-import { useNamespace } from '../../contexts/NamespaceContext'
-import AutoTable from '../../components/Table'
+import { AlarmSendType, Status } from '@/api/enum'
+import { ActionKey } from '@/api/global'
+import { templateService, type ListTemplateParams } from '@/api/template'
+import type { TemplateItem } from '@/api/types'
+import { GlobalStatus, TemplateAPP } from '@/api/types'
+import type { SendTemplateItem } from '@/api/request/types/model-types'
+import SearchBox from '@/components/data/search-box'
+import AutoTable from '@/components/Table/index'
+import { useContainerHeightTop } from '@/hooks/useContainerHeightTop'
+import { GlobalContext } from '@/utils/context'
+import { useRequest } from 'ahooks'
+import { Button, message, Space, theme } from 'antd'
+import type React from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
+import { SendTemplateDetailModal } from './modal-detail'
+import { EditSendTemplateModal } from './modal-edit'
+import { formList, getColumnList } from './options'
 
-export default function Templates() {
-  const [data, setData] = useState<TemplateItem[]>([])
-  const [loading, setLoading] = useState(false)
+const { useToken } = theme
+
+// 将 TemplateAPP 映射到 AlarmSendType
+const mapTemplateAPPToAlarmSendType = (app: TemplateAPP): AlarmSendType => {
+  switch (app) {
+    case TemplateAPP.TEMPLATE_APP_EMAIL:
+      return AlarmSendType.AlarmSendTypeEmail
+    case TemplateAPP.TEMPLATE_APP_WEBHOOK_DINGTALK:
+      return AlarmSendType.AlarmSendTypeDingTalk
+    case TemplateAPP.TEMPLATE_APP_WEBHOOK_WECHAT:
+      return AlarmSendType.AlarmSendTypeWeChat
+    case TemplateAPP.TEMPLATE_APP_WEBHOOK_FEISHU:
+      return AlarmSendType.AlarmSendTypeFeiShu
+    case TemplateAPP.TEMPLATE_APP_WEBHOOK_OTHER:
+      return AlarmSendType.AlarmSendTypeCustom
+    default:
+      return AlarmSendType.AlarmSendTypeEmail
+  }
+}
+
+// 将 TemplateItem 转换为 SendTemplateItem
+const convertTemplateItemToSendTemplateItem = (
+  item: TemplateItem,
+  index: number
+): SendTemplateItem => {
+  return {
+    id: item.uid ? item.uid : index + 1, // 临时使用索引作为 id，实际应该从后端获取 uid
+    name: item.name,
+    sendType: mapTemplateAPPToAlarmSendType(item.app),
+    status:
+      item.status === GlobalStatus.ENABLED
+        ? Status.StatusEnable
+        : Status.StatusDisable,
+    content: item.jsonData,
+    updatedAt: item.updatedAt,
+    createdAt: item.createdAt,
+  }
+}
+
+// 搜索参数类型
+type GetTemplateListRequest = {
+  pagination: {
+    page: number
+    pageSize: number
+    pageNum?: number
+  }
+  keyword?: string
+  status?: number
+  sendTypes?: number[]
+}
+
+// API 请求函数
+const getTemplateList = async (
+  params: ListTemplateParams | GetTemplateListRequest
+) => {
+  const apiParams: ListTemplateParams = {
+    page:
+      'pagination' in params
+        ? params.pagination.pageNum || params.pagination.page
+        : params.page || 1,
+    pageSize:
+      'pagination' in params
+        ? params.pagination.pageSize
+        : params.pageSize || 50,
+    keyword: params.keyword,
+  }
+  if ('status' in params && params.status) {
+    apiParams.status =
+      params.status === Status.StatusEnable
+        ? GlobalStatus.ENABLED
+        : GlobalStatus.DISABLED
+  }
+  const res = await templateService.list(apiParams)
+  return {
+    list: res.data.items.map(convertTemplateItemToSendTemplateItem),
+    pagination: {
+      total: res.data.total,
+      page: res.data.page,
+      pageSize: res.data.pageSize,
+    },
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const deleteTemplate = async (_id: number | string) => {
+  // 注意：这里需要根据实际的 id 找到对应的 uid
+  message.warning('删除功能需要传入 uid，请使用正确的 API')
+  return Promise.resolve()
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const updateTemplateStatus = async (_params: {
+  ids: (number | string)[]
+  status: Status
+}) => {
+  // 注意：这里需要根据实际的 id 找到对应的 uid
+  message.warning('更新状态功能需要传入 uid，请使用正确的 API')
+  return Promise.resolve()
+}
+
+const Template: React.FC = () => {
+  const { token } = useToken()
+  const { isFullscreen } = useContext(GlobalContext)
+
+  const [datasource, setDatasource] = useState<SendTemplateItem[]>([])
   const [total, setTotal] = useState(0)
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
-  const [keyword, setKeyword] = useState('')
-  const [modalVisible, setModalVisible] = useState(false)
-  const [editingItem, setEditingItem] = useState<TemplateItem | null>(null)
-  const [form] = Form.useForm()
-  const { currentNamespace } = useNamespace()
-  const { token } = theme.useToken()
+  const [searchParams, setSearchParams] = useState<GetTemplateListRequest>({
+    pagination: {
+      page: 1,
+      pageSize: 50,
+      pageNum: 1,
+    },
+  })
+  const [showModal, setShowModal] = useState(false)
+  const [SendTemplateDetail, setSendTemplateDetail] =
+    useState<SendTemplateItem>()
+  const [openDetailModal, setOpenDetailModal] = useState(false)
 
-  const loadData = useCallback(async () => {
-    try {
-      setLoading(true)
-      const res = await templateService.list({ page, pageSize, keyword })
-      setData(res.data.items)
-      setTotal(res.data.total)
-    } catch {
-      message.error('加载数据失败')
-    } finally {
-      setLoading(false)
+  const ADivRef = useRef<HTMLDivElement>(null)
+  const AutoTableHeight = useContainerHeightTop(
+    ADivRef,
+    datasource,
+    isFullscreen
+  )
+
+  const onOpenDetailModal = (item: SendTemplateItem) => {
+    setSendTemplateDetail(item)
+    setOpenDetailModal(true)
+  }
+
+  const onCloseDetailModal = () => {
+    setOpenDetailModal(false)
+    setSendTemplateDetail(undefined)
+  }
+
+  const onSearch = (values: GetTemplateListRequest) => {
+    setSearchParams({
+      ...searchParams,
+      ...values,
+    })
+  }
+
+  const { run: runGetTemplateList, loading: getTemplateListLoading } =
+    useRequest(getTemplateList, {
+      manual: true,
+      onSuccess: (res: {
+        list?: SendTemplateItem[]
+        pagination?: { total?: number }
+      }) => {
+        console.log('res', res)
+        setDatasource(res?.list || [])
+        setTotal(res?.pagination?.total || 0)
+      },
+    })
+
+  const onReset = () => {
+    setSearchParams({
+      pagination: {
+        page: 1,
+        pageSize: 50,
+      },
+    })
+  }
+
+  const handleEditModal = (detail?: SendTemplateItem) => {
+    setShowModal(true)
+    setSendTemplateDetail(detail)
+  }
+
+  const onRefresh = () => {
+    runGetTemplateList(searchParams)
+  }
+
+  const handleDelete = (id: number | string) => {
+    deleteTemplate(id).then(onRefresh)
+  }
+
+  const onChangeStatus = (SendTemplateId: number | string, status: Status) => {
+    updateTemplateStatus({ ids: [SendTemplateId], status }).then(onRefresh)
+  }
+
+  const onHandleMenuOnClick = (item: SendTemplateItem, key: ActionKey) => {
+    switch (key) {
+      case ActionKey.EDIT:
+        handleEditModal(item)
+        break
+      case ActionKey.DELETE:
+        handleDelete(item.id)
+        break
+      case ActionKey.DETAIL:
+        console.log('item', item)
+        console.log('datasource', datasource)
+        onOpenDetailModal(item)
+        break
+      case ActionKey.DISABLE:
+        onChangeStatus(item.id, Status.StatusDisable)
+        break
+      case ActionKey.ENABLE:
+        onChangeStatus(item.id, Status.StatusEnable)
+        break
+      default:
+        break
     }
-  }, [page, pageSize, keyword])
+  }
+
+  const handleTurnPage = (pageNum: number, pageSize: number) => {
+    setSearchParams({
+      ...searchParams,
+      pagination: {
+        ...searchParams.pagination,
+        page: pageNum,
+        pageNum,
+        pageSize,
+      },
+    })
+  }
+
+  const closeEditSendTemplateModal = () => {
+    setShowModal(false)
+  }
+
+  const handleEditSendTemplateModalOnOk = () => {
+    setShowModal(false)
+    onRefresh()
+  }
+
+  const columns = getColumnList({
+    onHandleMenuOnClick,
+    current: searchParams.pagination.pageNum || searchParams.pagination.page,
+    pageSize: searchParams.pagination.pageSize,
+  })
 
   useEffect(() => {
-    loadData()
-  }, [loadData, currentNamespace])
-
-  const handleCreate = () => {
-    setEditingItem(null)
-    form.resetFields()
-    form.setFieldsValue({ app: TemplateAPP.TEMPLATE_APP_EMAIL })
-    setModalVisible(true)
-  }
-
-  const handleEdit = async (item: TemplateItem) => {
-    setEditingItem(item)
-    const res = await templateService.get(item.uid)
-    form.setFieldsValue({
-      name: res.data.name,
-      app: res.data.app,
-      jsonData: res.data.jsonData,
-    })
-    setModalVisible(true)
-  }
-
-  const handleSubmit = async () => {
-    try {
-      const values = await form.validateFields()
-      if (editingItem) {
-        await templateService.update(editingItem.uid, values)
-        message.success('更新成功')
-      } else {
-        await templateService.create(values)
-        message.success('创建成功')
-      }
-      setModalVisible(false)
-      loadData()
-    } catch {
-      message.error('操作失败')
+    const params: ListTemplateParams = {
+      page: searchParams.pagination.pageNum || searchParams.pagination.page,
+      pageSize: searchParams.pagination.pageSize,
+      keyword: searchParams.keyword,
     }
-  }
-
-  const handleDelete = async (uid: string) => {
-    try {
-      await templateService.delete(uid)
-      message.success('删除成功')
-      loadData()
-    } catch {
-      message.error('删除失败')
+    if (searchParams.status) {
+      params.status =
+        searchParams.status === Status.StatusEnable
+          ? GlobalStatus.ENABLED
+          : GlobalStatus.DISABLED
     }
-  }
-
-  const handleStatusToggle = async (item: TemplateItem) => {
-    try {
-      const newStatus =
-        item.status === GlobalStatus.ENABLED
-          ? GlobalStatus.DISABLED
-          : GlobalStatus.ENABLED
-      await templateService.updateStatus(item.uid, newStatus)
-      message.success('状态更新成功')
-      loadData()
-    } catch {
-      message.error('状态更新失败')
-    }
-  }
-
-  const columns = [
-    { title: 'UID', dataIndex: 'uid', key: 'uid', width: 120, ellipsis: true },
-    { title: '名称', dataIndex: 'name', key: 'name' },
-    {
-      title: '应用类型',
-      dataIndex: 'app',
-      key: 'app',
-      width: 100,
-      render: (app: TemplateAPP) => {
-        const appMap: Partial<Record<TemplateAPP, string>> = {
-          [TemplateAPP.TEMPLATE_APP_EMAIL]: '邮件',
-          [TemplateAPP.TEMPLATE_APP_WEBHOOK_OTHER]: 'Webhook',
-          [TemplateAPP.TEMPLATE_APP_WEBHOOK_DINGTALK]: '钉钉',
-          [TemplateAPP.TEMPLATE_APP_WEBHOOK_WECHAT]: '微信',
-          [TemplateAPP.TEMPLATE_APP_WEBHOOK_FEISHU]: '飞书',
-        }
-        return appMap[app] || <Tag color='default'>未知</Tag>
-      },
-    },
-    {
-      title: '状态',
-      dataIndex: 'status',
-      key: 'status',
-      width: 80,
-      render: (status: GlobalStatus) =>
-        status === GlobalStatus.ENABLED ? (
-          <Tag color='success'>启用</Tag>
-        ) : (
-          <Tag color='default'>禁用</Tag>
-        ),
-    },
-    { title: '更新时间', dataIndex: 'updatedAt', key: 'updatedAt', width: 180 },
-    {
-      title: '操作',
-      key: 'action',
-      width: 200,
-      render: (_: unknown, record: TemplateItem) => (
-        <Space>
-          <Button type='link' size='small' onClick={() => handleEdit(record)}>
-            编辑
-          </Button>
-          <Button
-            type='link'
-            size='small'
-            onClick={() => handleStatusToggle(record)}
-          >
-            {record.status === GlobalStatus.ENABLED ? '禁用' : '启用'}
-          </Button>
-          <Popconfirm
-            title='确定删除？'
-            onConfirm={() => handleDelete(record.uid)}
-            okText='确定'
-            cancelText='取消'
-          >
-            <Button type='link' danger size='small'>
-              删除
-            </Button>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ]
+    runGetTemplateList(params)
+  }, [searchParams, runGetTemplateList])
 
   return (
-    <div>
-      <div
-        style={{
-          marginBottom: 16,
-          display: 'flex',
-          justifyContent: 'space-between',
-        }}
-      >
-        <Input.Search
-          placeholder='搜索名称'
-          onSearch={setKeyword}
-          style={{ width: 300 }}
-          allowClear
-        />
-        <Button type='primary' icon={<PlusOutlined />} onClick={handleCreate}>
-          新建模板
-        </Button>
-      </div>
-
-      <AutoTable
-        dataSource={data}
-        columns={columns}
-        rowKey='uid'
-        loading={loading}
-        total={total}
-        pageSize={pageSize}
-        pageNum={page}
-        handleTurnPage={(p, ps) => {
-          setPage(p)
-          setPageSize(ps)
-        }}
-        showSizeChanger={true}
-        style={{
-          background: token.colorBgContainer,
-          borderRadius: token.borderRadius,
-        }}
-        size='middle'
+    <>
+      <EditSendTemplateModal
+        width='50%'
+        open={showModal}
+        sendTemplateId={
+          SendTemplateDetail?.id ? String(SendTemplateDetail.id) : undefined
+        }
+        onCancel={closeEditSendTemplateModal}
+        onOk={handleEditSendTemplateModalOnOk}
       />
-
-      <Modal
-        title={editingItem ? '编辑模板' : '新建模板'}
-        open={modalVisible}
-        onOk={handleSubmit}
-        onCancel={() => setModalVisible(false)}
-        okText='确定'
-        cancelText='取消'
-        width={800}
-      >
-        <Form form={form} layout='vertical'>
-          <Form.Item
-            name='name'
-            label='名称'
-            rules={[{ required: true, message: '请输入名称' }]}
-          >
-            <Input placeholder='模板名称' />
-          </Form.Item>
-          <Form.Item
-            name='app'
-            label='应用类型'
-            rules={[{ required: true, message: '请选择应用类型' }]}
-          >
-            <Select>
-              <Select.Option value={TemplateAPP.TEMPLATE_APP_EMAIL}>
-                邮件
-              </Select.Option>
-              <Select.Option value={TemplateAPP.TEMPLATE_APP_WEBHOOK_OTHER}>
-                Webhook
-              </Select.Option>
-              <Select.Option value={TemplateAPP.TEMPLATE_APP_WEBHOOK_DINGTALK}>
-                钉钉
-              </Select.Option>
-              <Select.Option value={TemplateAPP.TEMPLATE_APP_WEBHOOK_WECHAT}>
-                微信
-              </Select.Option>
-              <Select.Option value={TemplateAPP.TEMPLATE_APP_WEBHOOK_FEISHU}>
-                飞书
-              </Select.Option>
-            </Select>
-          </Form.Item>
-          <Form.Item
-            name='jsonData'
-            label='模板内容 (JSON)'
-            rules={[{ required: true, message: '请输入模板内容' }]}
-          >
-            <Input.TextArea
-              placeholder='{"subject": "{{title}}", "body": "{{content}}"}'
-              rows={10}
-              style={{ fontFamily: 'monospace' }}
+      <SendTemplateDetailModal
+        width='50%'
+        sendTemplateId={SendTemplateDetail?.id || 0}
+        open={openDetailModal}
+        onCancel={onCloseDetailModal}
+        onOk={onCloseDetailModal}
+      />
+      <div className='flex flex-col gap-3 p-3'>
+        <div
+          style={{
+            background: token.colorBgContainer,
+            borderRadius: token.borderRadius,
+          }}
+        >
+          <SearchBox
+            formList={formList}
+            onSearch={onSearch}
+            onReset={onReset}
+          />
+        </div>
+        <div
+          className='p-3'
+          style={{
+            background: token.colorBgContainer,
+            borderRadius: token.borderRadius,
+          }}
+        >
+          <div className='flex justify-between items-center'>
+            <div className='text-lg font-bold'>通知模板</div>
+            <Space size={8}>
+              <Button type='primary' onClick={() => handleEditModal()}>
+                添加
+              </Button>
+              <Button color='default' variant='filled' onClick={onRefresh}>
+                刷新
+              </Button>
+            </Space>
+          </div>
+          <div className='mt-4' ref={ADivRef}>
+            <AutoTable
+              rowKey={(record: SendTemplateItem) => String(record.id)}
+              dataSource={datasource}
+              total={total}
+              loading={getTemplateListLoading}
+              columns={columns}
+              handleTurnPage={handleTurnPage}
+              pageSize={searchParams.pagination.pageSize}
+              pageNum={
+                searchParams.pagination.pageNum || searchParams.pagination.page
+              }
+              showSizeChanger={true}
+              style={{
+                background: token.colorBgContainer,
+                borderRadius: token.borderRadius,
+              }}
+              scroll={{
+                y: `calc(100vh - 170px  - ${AutoTableHeight}px)`,
+                x: 1000,
+              }}
+              size='middle'
             />
-          </Form.Item>
-        </Form>
-      </Modal>
-    </div>
+          </div>
+        </div>
+      </div>
+    </>
   )
 }
+
+export default Template

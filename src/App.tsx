@@ -20,7 +20,12 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    <ConfigProvider locale={zhCN}>
+    <ConfigProvider
+      locale={zhCN}
+      theme={{
+        token: { colorPrimary: '#6c34e6' },
+      }}
+    >
       <BrowserRouter>
         <Routes>
           <Route path='/login' element={<Login />} />
