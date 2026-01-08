@@ -17,11 +17,11 @@ export default defineConfig({
     proxy: {
       // Forward API calls to backend to avoid CORS in development
       '/v1': {
-        target: 'http://localhost:8080',
+        target: 'http://localhost:18080',
         changeOrigin: true,
       },
       '/health': {
-        target: 'http://localhost:8080',
+        target: 'http://localhost:18080',
         changeOrigin: true,
       },
     },
