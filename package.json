@@ -4,10 +4,16 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "APP_NAME=test vite && APP_NAME=template vite ",
+    "dev:template": "APP_NAME=template vite ",
+    "dev:test": "APP_NAME=test vite ",
+    "build": "APP_NAME=test vite build && APP_NAME=template vite build ",
+    "build:template": "APP_NAME=template vite build ",
+    "build:test": "APP_NAME=test vite build ",
     "lint": "eslint .",
-    "preview": "vite preview",
+    "preview": "vite preview ",
+    "preview:template": "vite preview --outDir dist/template ",
+    "preview:test": "vite preview --outDir dist/test ",
     "typecheck": "tsc --noEmit -p tsconfig.app.json"
   },
   "dependencies": {

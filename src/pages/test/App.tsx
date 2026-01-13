@@ -1,7 +1,8 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { ConfigProvider } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
-import TemplatePage from './pages/template'
+import TestPage from '@/pages/test'
+
 function App() {
   return (
     <ConfigProvider
@@ -12,7 +13,8 @@ function App() {
     >
       <BrowserRouter>
         <Routes>
-          <Route path='/template' element={<TemplatePage />} />
+          <Route path='/' element={<TestPage />} />
+          <Route path='/*' element={<TestPage />} />
         </Routes>
       </BrowserRouter>
     </ConfigProvider>
