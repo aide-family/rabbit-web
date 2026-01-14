@@ -20,15 +20,17 @@ export default defineConfig(({ mode }) => {
       health: env.VITE_HEALTH_TEST_API || '',
     },
   }
-  const v1ApiUrl = appUrls[appName as keyof typeof appUrls].v1
-  const healthApiUrl = appUrls[appName as keyof typeof appUrls].health
+  const v1ApiUrl = appName ? appUrls[appName as keyof typeof appUrls]?.v1 : ''
+  const healthApiUrl = appName
+    ? appUrls[appName as keyof typeof appUrls]?.health
+    : ''
   // 如果指定了应用名称，只构建该应用
   if (appName && apps.includes(appName)) {
     const appHtmlPath = path.resolve(
       __dirname,
-      `src/pages/${appName}/index.html`
+      `src/apps/${appName}/index.html`
     )
-    const appRoot = path.resolve(__dirname, `src/pages/${appName}`)
+    const appRoot = path.resolve(__dirname, `src/apps/${appName}`)
     const srcRoot = path.resolve(__dirname, './src')
 
     return {
